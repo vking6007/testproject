@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  testproject-app:
+    build: .
+    container_name: testproject-app
+    ports:
+      - "8085:8085"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/team_1_db?timezone=UTC&useSSL=false&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=team_1
+      - SPRING_DATASOURCE_PASSWORD=team_1
+    depends_on:
+      - postgres
+    networks:
+      - testproject-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/api/test/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: testproject-postgres
+    environment:
+      - POSTGRES_DB=team_1_db
+      - POSTGRES_USER=team_1
+      - POSTGRES_PASSWORD=team_1
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - testproject-network
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: testproject-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - testproject-app
+    networks:
+      - testproject-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  testproject-network:
+    driver: bridge
+
