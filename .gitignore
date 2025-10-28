@@ -88,8 +88,6 @@ Desktop.ini
 
 # Application specific
 application-local.properties
-application-dev.properties
-application-prod.properties
 
 # Database
 *.db
