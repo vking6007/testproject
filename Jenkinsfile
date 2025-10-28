@@ -89,24 +89,18 @@ pipeline {
             echo "📋 Check logs with: tail -f app.log"
             
             // Start the application in a way that survives Jenkins pipeline completion
-            script {
-                sh '''
-                    echo "🚀 Starting Spring Boot application in background (survives Jenkins completion)..."
-                    nohup java -jar target/${JAR_NAME} \
-                      --server.port=${APP_PORT} \
-                      --spring.profiles.active=dev \
-                      --spring.datasource.url=${DB_URL} \
-                      --spring.datasource.username=${DB_USER} \
-                      --spring.datasource.password=${DB_PASS} \
-                      > app.log 2>&1 &
-                    
-                    # Disown the process so it survives Jenkins cleanup
-                    disown
-                    
-                    echo "📝 Application started in background and disowned"
-                    echo "🔍 Process ID: $!"
-                '''
-            }
+            sh '''
+                echo "🚀 Starting Spring Boot application in background (survives Jenkins completion)..."
+                bash -c "nohup java -jar target/${JAR_NAME} \
+                  --server.port=${APP_PORT} \
+                  --spring.profiles.active=dev \
+                  --spring.datasource.url=${DB_URL} \
+                  --spring.datasource.username=${DB_USER} \
+                  --spring.datasource.password=${DB_PASS} \
+                  > app.log 2>&1 & disown"
+                
+                echo "✅ Application detached successfully!"
+            '''
         }
         failure {
             echo "❌ Deployment failed. Check logs for details."
