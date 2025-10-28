@@ -20,7 +20,7 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                git 'https://github.com/vking6007/testproject.git'
+                git branch: 'main', url: 'https://github.com/vking6007/testproject.git'
             }
         }
 
