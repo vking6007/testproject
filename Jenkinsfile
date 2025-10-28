@@ -7,13 +7,14 @@ pipeline {
     }
 
     environment {
-        IMAGE_NAME = "team1-springboot-app"
-        CONTAINER_NAME = "team1-springboot-app"
-        NETWORK = "jenkins-net"
+        JAR_NAME = "testproject-0.0.1-SNAPSHOT.jar"
+        APP_PORT = "8085"
+        HOST_PORT = "8082"
         DB_HOST = "team_1_dev_1_postgres"
         DB_USER = "team_1_user"
         DB_PASS = "team_1_pass"
         DB_NAME = "team_1_db"
+        DB_URL = "jdbc:postgresql://${DB_HOST}:5432/${DB_NAME}"
     }
 
     stages {
@@ -29,33 +30,49 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Stop Previous App') {
             steps {
-                sh 'docker build -t ${IMAGE_NAME} .'
+                sh '''
+                    echo "🛑 Stopping previous application (if running)..."
+                    pkill -f "java.*${JAR_NAME}" || true
+                    sleep 3
+                '''
             }
         }
 
-        stage('Deploy Container') {
+        stage('Deploy JAR') {
             steps {
                 sh '''
-                    docker stop ${CONTAINER_NAME} || true
-                    docker rm ${CONTAINER_NAME} || true
-
-                    docker run -d \
-                      --name ${CONTAINER_NAME} \
-                      --network ${NETWORK} \
-                      -p 8082:8085 \
-                      -e SPRING_PROFILES_ACTIVE=dev \
-                      ${IMAGE_NAME}
+                    echo "🚀 Starting Spring Boot application..."
+                    nohup java -jar target/${JAR_NAME} \
+                      --server.port=${APP_PORT} \
+                      --spring.profiles.active=dev \
+                      --spring.datasource.url=${DB_URL} \
+                      --spring.datasource.username=${DB_USER} \
+                      --spring.datasource.password=${DB_PASS} \
+                      > app.log 2>&1 &
+                    
+                    echo "📝 Application started in background"
+                    echo "📋 Process ID: $!"
                 '''
             }
         }
 
         stage('Verify Deployment') {
             steps {
-                sh 'docker ps | grep ${CONTAINER_NAME}'
-                sh 'sleep 15'
-                sh 'curl -f http://localhost:8082/api/test/health || echo "Health check failed"'
+                sh '''
+                    echo "🕒 Waiting for application to start..."
+                    sleep 20
+                    
+                    echo "🔍 Checking if application is running..."
+                    pgrep -f "java.*${JAR_NAME}" || (echo "❌ Application not running!" && exit 1)
+                    
+                    echo "✅ Checking health endpoint..."
+                    curl -f http://localhost:${APP_PORT}/api/test/health || echo "⚠️ Health check failed"
+                    
+                    echo "📊 Application status:"
+                    ps aux | grep java | grep ${JAR_NAME} | head -1
+                '''
             }
         }
     }
@@ -65,12 +82,12 @@ pipeline {
             echo "✅ Pipeline finished."
         }
         success {
-            echo "🎉 Deployment successful! App is running on http://localhost:8082"
-            echo "🔗 Internal container communication: http://team1-springboot-app:8085"
+            echo "🎉 Deployment successful! App is running on http://localhost:${APP_PORT}"
+            echo "📋 Check logs with: tail -f app.log"
         }
         failure {
             echo "❌ Deployment failed. Check logs for details."
+            sh 'tail -50 app.log || true'
         }
     }
 }
-
