@@ -11,6 +11,7 @@ pipeline {
         CONTAINER_NAME = "springboot-app"
         APP_PORT = "8085"
         HOST_PORT = "8082"
+
         DB_HOST = "team_1_dev_1_postgres"
         DB_USER = "team_1_user"
         DB_PASS = "team_1_pass"
@@ -19,9 +20,10 @@ pipeline {
     }
 
     stages {
+
         stage('Checkout Code') {
             steps {
-                echo "📦 Checking out code..."
+                echo "📦 Checking out source code..."
                 git branch: 'main', url: 'https://github.com/vking6007/testproject.git'
             }
         }
@@ -44,7 +46,7 @@ pipeline {
 
         stage('Stop Previous Container') {
             steps {
-                echo "🛑 Stopping previous container if running..."
+                echo "🛑 Stopping and removing old container if running..."
                 sh '''
                     docker stop ${CONTAINER_NAME} || true
                     docker rm ${CONTAINER_NAME} || true
@@ -54,7 +56,7 @@ pipeline {
 
         stage('Run Application Container') {
             steps {
-                echo "🚀 Running Spring Boot container..."
+                echo "🚀 Running new Spring Boot container..."
                 sh '''
                     docker run -d \
                       --name ${CONTAINER_NAME} \
@@ -71,13 +73,17 @@ pipeline {
 
         stage('Verify Deployment') {
             steps {
-                echo "🕒 Waiting for app to initialize..."
+                echo "🕒 Waiting for the app to start..."
                 sh 'sleep 20'
-                echo "🔍 Checking container and app health..."
+
+                echo "🔍 Checking app status inside the container..."
                 sh '''
-                    docker ps | grep ${CONTAINER_NAME}
-                    docker logs ${CONTAINER_NAME} --tail 50 || true
-                    curl -f http://localhost:${HOST_PORT}/api/test/health || echo "⚠️ Health check failed"
+                    docker ps | grep ${CONTAINER_NAME} || (echo "❌ Container not running!" && exit 1)
+
+                    echo "✅ Container is running successfully!"
+                    echo "🌍 Checking health endpoint..."
+                    docker exec ${CONTAINER_NAME} curl -f http://localhost:${APP_PORT}/api/test/health \
+                      || (echo "⚠️ Health check failed!" && exit 1)
                 '''
             }
         }
@@ -86,10 +92,11 @@ pipeline {
     post {
         success {
             echo "🎉 Deployment successful!"
-            echo "🌍 App running on http://localhost:${HOST_PORT}"
+            echo "🌍 Application running on: http://localhost:${HOST_PORT}"
+            echo "🐳 Docker container: ${CONTAINER_NAME}"
         }
         failure {
-            echo "❌ Deployment failed! Showing container logs..."
+            echo "❌ Deployment failed! Fetching container logs..."
             sh 'docker logs ${CONTAINER_NAME} || true'
         }
         always {
