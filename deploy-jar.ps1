@@ -21,7 +21,8 @@ mvn clean package -DskipTests
 
 # --- Stop Previous App ---
 Write-Host "--- Stopping previous application (if running) ---" -ForegroundColor Yellow
-Get-Process -Name "java" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like "*${JAR_NAME}*" } | Stop-Process -Force -ErrorAction SilentlyContinue
+# Find and stop only our specific Spring Boot application
+Get-Process -Name "java" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like "*target/${JAR_NAME}*" -or $_.CommandLine -like "*testproject*jar*" } | Stop-Process -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 3
 
 # --- Deploy JAR ---
@@ -45,7 +46,7 @@ Start-Sleep -Seconds 20
 
 # --- Verify Deployment ---
 Write-Host "--- Verifying application status ---" -ForegroundColor Yellow
-$javaProcess = Get-Process -Name "java" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like "*${JAR_NAME}*" }
+$javaProcess = Get-Process -Name "java" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like "*target/${JAR_NAME}*" -or $_.CommandLine -like "*testproject*jar*" }
 
 if ($javaProcess) {
     Write-Host "✅ Application is running" -ForegroundColor Green

@@ -34,7 +34,10 @@ pipeline {
             steps {
                 sh '''
                     echo "🛑 Stopping previous application (if running)..."
-                    pkill -f "java.*${JAR_NAME}" || true
+                    # Find and stop only our specific Spring Boot application
+                    pkill -f "java.*-jar.*target/${JAR_NAME}" || true
+                    # Alternative: stop by specific command pattern
+                    pkill -f "java.*testproject.*jar" || true
                     sleep 3
                 '''
             }
@@ -65,13 +68,13 @@ pipeline {
                     sleep 20
                     
                     echo "🔍 Checking if application is running..."
-                    pgrep -f "java.*${JAR_NAME}" || (echo "❌ Application not running!" && exit 1)
+                    pgrep -f "java.*-jar.*target/${JAR_NAME}" || (echo "❌ Application not running!" && exit 1)
                     
                     echo "✅ Checking health endpoint..."
                     curl -f http://localhost:${APP_PORT}/api/test/health || echo "⚠️ Health check failed"
                     
                     echo "📊 Application status:"
-                    ps aux | grep java | grep ${JAR_NAME} | head -1
+                    ps aux | grep java | grep "target/${JAR_NAME}" | head -1
                 '''
             }
         }

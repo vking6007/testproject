@@ -21,7 +21,10 @@ mvn clean package -DskipTests
 
 # --- Stop Previous App ---
 echo "--- Stopping previous application (if running) ---"
-pkill -f "java.*${JAR_NAME}" || true
+# Find and stop only our specific Spring Boot application
+pkill -f "java.*-jar.*target/${JAR_NAME}" || true
+# Alternative: stop by specific command pattern
+pkill -f "java.*testproject.*jar" || true
 sleep 3
 
 # --- Deploy JAR ---
@@ -43,10 +46,10 @@ sleep 20
 
 # --- Verify Deployment ---
 echo "--- Verifying application status ---"
-if pgrep -f "java.*${JAR_NAME}" > /dev/null; then
+if pgrep -f "java.*-jar.*target/${JAR_NAME}" > /dev/null; then
     echo "✅ Application is running"
     echo "📊 Process details:"
-    ps aux | grep java | grep ${JAR_NAME} | head -1
+    ps aux | grep java | grep "target/${JAR_NAME}" | head -1
 else
     echo "❌ Application is not running!"
     echo "📋 Last 50 lines of log:"
