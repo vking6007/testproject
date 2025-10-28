@@ -78,6 +78,12 @@ pipeline {
             steps {
                 echo "🚀 Deploying Spring Boot app for ${params.ENVIRONMENT}..."
                 sh """
+                    # Check if port ${HOST_PORT} is already in use
+                    if docker ps --format '{{.Ports}}' | grep -q ':${HOST_PORT}->'; then
+                      echo "⚠️ Port ${HOST_PORT} already in use. Stopping container using it..."
+                      docker ps --format '{{.ID}} {{.Ports}}' | grep ':${HOST_PORT}->' | awk '{print \$1}' | xargs -r docker stop
+                    fi
+
                     docker run -d \
                       --name ${CONTAINER_NAME} \
                       --network jenkins-net \
