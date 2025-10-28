@@ -46,9 +46,6 @@ pipeline {
                       --network ${NETWORK} \
                       -p 8082:8085 \
                       -e SPRING_PROFILES_ACTIVE=dev \
-                      -e SPRING_DATASOURCE_URL=jdbc:postgresql://${DB_HOST}:5432/${DB_NAME} \
-                      -e SPRING_DATASOURCE_USERNAME=${DB_USER} \
-                      -e SPRING_DATASOURCE_PASSWORD=${DB_PASS} \
                       ${IMAGE_NAME}
                 '''
             }
