@@ -54,8 +54,8 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 sh 'docker ps | grep ${CONTAINER_NAME}'
-                sh 'sleep 10'
-                sh 'curl -f http://team1-springboot-app:8085/api/test/health || echo "Health check failed"'
+                sh 'sleep 15'
+                sh 'curl -f http://localhost:8082/api/test/health || echo "Health check failed"'
             }
         }
     }
