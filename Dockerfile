@@ -4,6 +4,9 @@
 # Use base image with Java 21
 FROM openjdk:21-jdk-slim
 
+# Install curl for health checks (needed for Jenkins verification)
+RUN apt-get update -qq && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
 # Set working directory
 WORKDIR /app
 
